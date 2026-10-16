@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Space Dodge — Ultimate Fixed Edition 🚀</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#030712;color:#fff;font-family:system-ui,Segoe UI,Roboto;display:flex;justify-content:center;padding:12px}
+    .app{width:100%;max-width:420px;position:relative}
+    h3,h4{margin:6px 0}
+    .row{margin:6px 0}
+    button{width:100%;padding:10px;border-radius:12px;border:2px solid #7c3aed;background:linear-gradient(135deg, #7c3aed, #4f46e5);color:#fff;font-weight:700;margin-top:6px;cursor:pointer;transition:transform 0.1s ease}
+    button:active{transform:scale(.92);background:#7c3aed33}
+    .small{font-size:13px;color:#cbd5e1}
+    select,input{width:100%;padding:8px;border-radius:10px;border:1px solid #334155;background:#0b1329;color:#fff;margin-top:4px}
+    .store,.redeem,.mapSelect,.rocketSelect,.leaderboard,.missions,.statsBox{background:#0e162a;padding:12px;border-radius:12px;margin-top:10px;border:1px solid #1e293b}
+    .item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#111c36;margin-top:6px}
+    .item button{width:auto;padding:6px 12px;margin-top:0;background:#22c55e;border:none}
+    canvas{width:100%;height:520px;border-radius:12px;display:none;margin-top:10px;background:#000;touch-action:none;box-shadow:0 0 30px rgba(124,58,237,0.5)}
+    .hud{display:flex;justify-content:space-between;margin-top:8px;font-weight:700;font-size:13px;align-items:center}
+    .ctrl{display:none;justify-content:center;gap:8px;margin-top:10px}
+    .ctrl button{width:65px;height:65px;border-radius:14px;font-size:16px;background:#1e293b;border:2px solid #38bdf8}
+    #fireBtn{background:#7c3aed !important;}
+    #ultraBtn{background:linear-gradient(135deg,#f59e0b,#ef4444) !important;border-color:#fcd34d !important;font-size:13px;}
+    .note{font-size:11px;color:#9aa4b2;margin-top:4px}
+
+    #gameOver {
+      position:absolute; inset:0; display:none; background:rgba(3,7,18,0.95); backdrop-filter: blur(8px);
+      align-items:center; justify-content:center; flex-direction:column; gap:8px; z-index:20; border-radius:12px; padding:20px; text-align:center; color:#fff;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    #gameOver h2{font-size:26px;margin:0;color:#ef4444}
+    #gameOver p{margin:0;color:#d1d5db;font-size:13px}
+    .go-btn{width:200px;padding:8px;border-radius:10px;background:#7c3aed}
+    .power-label { position: absolute; left: 12px; top: 12px; font-size: 11px; color: #38bdf8; z-index: 10; font-weight:700; background:rgba(0,0,0,0.7); padding:4px 8px; border-radius:6px;}
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="power-label">⚡ Active: <span id="activePowers" style="color:#fff">None</span></div>
+
+  <div id="gameOver" role="dialog" aria-hidden="true">
+    <h2>💀 OOF! Skill Issue?</h2>
+    <p id="goScore">Score: 0</p>
+    <p id="goCoins" style="color:#facc15; font-weight:bold;">Coins Earned: 0</p>
+    <input id="playerName" placeholder="Enter Hype Name (e.g. Chad 🗿)" style="margin-top:6px; font-size:13px;" maxlength="12">
+    <button onclick="submitGlobalScore()" style="padding:6px; background:#22c55e; border:none; border-radius:8px; font-size:13px; font-weight:bold;">Flex Score on World Rank 🔥</button>
+    <div style="width:220px; margin-top:5px;">
+      <button class="go-btn" id="playAgain">Play Again (One More)</button>
+      <button class="go-btn" id="backMenu" style="margin-top:5px;background:#334155">Back to Main Menu</button>
+    </div>
+  </div>
+
+  <div id="menu">
+    <div style="text-align:center; margin-bottom:10px;">
+      <h2 style="color:#38bdf8; font-size:22px;">🚀 Space Dodge: Fixed Lives</h2>
+      <p class="small">Max 5 Lives, Synthwave BGM & 2k Coin Rains ✨</p>
+    </div>
+
+    <div class="row">
+      <button id="bgmToggleBtn" onclick="toggleBGM()" style="background:linear-gradient(135deg, #0284c7, #0369a1); border-color:#38bdf8;">🎵 BGM: ON (Click to Mute)</button>
+    </div>
+
+    <div class="statsBox">
+      <h4>📊 Flex Stats</h4>
+      <div id="statsList" class="small" style="color:#38bdf8; margin-top:4px; line-height:1.5;"></div>
+    </div>
+
+    <div class="missions">
+      <h4>🎯 Daily Grind Mission</h4>
+      <div id="missionText" class="small" style="color:#facc15">Destroy 15 Asteroids: 0/15</div>
+      <button id="claimMissionBtn" onclick="claimMission()" style="display:none; padding:5px; background:#f59e0b; border:none; border-radius:6px; margin-top:4px;">Claim +200 🪙</button>
+    </div>
+
+    <div class="mapSelect">
+      <h4>🗺️ Select Aesthetic Map</h4>
+      <select id="mapChoice"></select>
+    </div>
+
+    <div class="rocketSelect">
+      <h4>🚀 Select Rocket / Skin</h4>
+      <select id="rocketChoice"></select>
+    </div>
+
+    <h3>Select Difficulty Level</h3>
+    <div class="row" style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+      <button onclick="setDiff(1)" style="margin-top:0">Normal</button>
+      <button onclick="setDiff(2)" style="margin-top:0">Medium</button>
+      <button onclick="setDiff(3)" style="margin-top:0">Hard</button>
+      <button onclick="setDiff(4)" style="margin-top:0;background:linear-gradient(135deg,#ef4444,#b91c1c)">🔥 Tryhard (Extreme)</button>
+    </div>
+
+    <div class="leaderboard">
+      <h4>🌐 Hall of Fame (Leaderboard)</h4>
+      <div id="globalScoresList" class="small" style="margin-top:6px; line-height:1.5;"></div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; background:#0e162a; padding:10px 14px; border-radius:12px;">
+      <span style="font-weight:700;">Wallet Balance:</span>
+      <span style="color:#facc15; font-size:18px; font-weight:800;">🪙 <span id="menuCoins">100</span></span>
+    </div>
+
+    <div class="store" id="storeContainer">
+      <h4>🛒 Upgrade Shop</h4>
+      <div id="storeItems"></div>
+    </div>
+
+    <div class="redeem">
+      <h4>🎁 Promo Code</h4>
+      <div style="display:flex; gap:6px;">
+        <input id="codeInput" placeholder="Enter Code (TAGDA2026)">
+        <button onclick="redeemCode()" style="width:100px; margin-top:4px;">Redeem</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameUI">
+    <div class="hud">
+      <div id="score">Score: 0</div>
+      <div id="livesDisplay" style="color:#ef4444">❤️</div>
+      <div id="ultraMeter" style="color:#f59e0b">Ultra: 0%</div>
+      <div id="coinsDisplay" style="color:#facc15; font-weight:bold;">🪙 <span id="coins">100</span></div>
+    </div>
+    <canvas id="gameCanvas" width="360" height="520"></canvas>
+
+    <div class="ctrl" id="ctrl">
+      <button id="leftBtn">◀</button>
+      <button id="fireBtn">⚡</button>
+      <button id="ultraBtn" disabled>🌟 ULTRA</button>
+      <button id="rightBtn">▶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let audioCtx = null, bgmInterval = null, isBgmOn = true;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  startBGM();
+}
+
+function toggleBGM() {
+  initAudio();
+  isBgmOn = !isBgmOn;
+  let btn = document.getElementById('bgmToggleBtn');
+  if(isBgmOn) {
+    btn.innerText = "🎵 BGM: ON (Click to Mute)";
+    btn.style.background = "linear-gradient(135deg, #0284c7, #0369a1)";
+    startBGM();
+  } else {
+    btn.innerText = "🔇 BGM: MUTED (Click to Play)";
+    btn.style.background = "linear-gradient(135deg, #475569, #334155)";
+    if(bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
+  }
+}
+
+function startBGM() {
+  if (bgmInterval || !isBgmOn) return;
+  const synthNotes = [220.00, 246.94, 261.63, 293.66, 329.63, 392.00];
+  let step = 0;
+  bgmInterval = setInterval(() => {
+    if (!audioCtx || audioCtx.state !== 'running' || !isBgmOn) return;
+    try {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(synthNotes[step % synthNotes.length], audioCtx.currentTime);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+      step++;
+    } catch(e){}
+  }, 220);
+}
+
+function playSound(type) {
+  try {
+    initAudio();
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    let now = audioCtx.currentTime;
+    if(type === 'coin') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.start(now); osc.stop(now + 0.1);
+    } else if(type === 'laser') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+      osc.start(now); osc.stop(now + 0.1);
+    } else if(type === 'ultra') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.linearRampToValueAtTime(1000, now + 0.5);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      osc.start(now); osc.stop(now + 0.5);
+    } else if(type === 'explosion') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.linearRampToValueAtTime(20, now + 0.25);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      osc.start(now); osc.stop(now + 0.25);
+    }
+  } catch(e) {}
+}
+
+let totalCoins = Number(localStorage.getItem('TOTAL_COINS')) || 100;
+let startCoins = totalCoins;
+// Strict Max 5 Lives Limit Check
+let maxLives = Math.min(5, Number(localStorage.getItem('UP_LIVES')) || 1);
+let shieldBonusTime = Number(localStorage.getItem('UP_SHIELD')) || 0;
+
+let totalGamesPlayed = Number(localStorage.getItem('STAT_GAMES')) || 0;
+let totalAsteroidsDestroyed = Number(localStorage.getItem('STAT_ASTEROIDS')) || 0;
+let totalCoinsCollected = Number(localStorage.getItem('STAT_COINS')) || 0;
+
+let missionProgress = Number(localStorage.getItem('MISSION_PROG')) || 0;
+let missionClaimed = localStorage.getItem('MISSION_CLAIMED') === '1';
+const MISSION_TARGET = 15;
+
+let globalScores = JSON.parse(localStorage.getItem('GLOBAL_SCORES')) || [
+  {name: 'Chad 🗿', score: 89400},
+  {name: 'Aura God ✨', score: 72100},
+  {name: 'Sigma Grindset 🛡️', score: 64300}
+];
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = 360, H = 520;
+
+let rockets = [
+  {type:'rocket1', name:'Standard Vector', multiplier:2, fireRate: 400, price:0, color:'#7c3aed', laserColor:'#38bdf8', owned:true},
+  {type:'rocket2', name:'Neon Striker', multiplier:3, fireRate: 250, price:300, color:'#22c55e', laserColor:'#4ade80', owned: false},
+  {type:'rocket3', name:'Solar Blazer', multiplier:5, fireRate: 150, price:800, color:'#f59e0b', laserColor:'#facc15', owned: false},
+  {type:'rocket4', name:'🌈 RGB Gamer Aura', multiplier:8, fireRate: 120, price:1500, color:'rgb', laserColor:'#ec4899', owned: false}
+];
+
+const maps = [
+  {id:'space', name:'Deep Space 3D', price:0, owned:true},
+  {id:'nebula', name:'Purple Nebula 3D', price:100, owned:false},
+  {id:'mars', name:'Mars Red Storm 3D', price:200, owned:false},
+  {id:'galaxy', name:'Galaxy Core 3D', price:400, owned:false}
+];
+
+rockets.forEach(r => { if(r.price > 0 && localStorage.getItem('OWN_' + r.type) === '1') r.owned = true; });
+maps.forEach(m => { if(m.price > 0 && localStorage.getItem('MAP_' + m.id) === '1') m.owned = true; });
+
+function spawnParticles(x, y, color) {
+  for(let i=0; i<10; i++) {
+    particles.push({
+      x: x, y: y,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8,
+      color: color || '#facc15',
+      alpha: 1,
+      life: 25
+    });
+  }
+}
+
+function generateAsteroidOffsets(vertexCount, radius) {
+  let offsets = [];
+  for (let i = 0; i < vertexCount; i++) {
+    let angle = (i / vertexCount) * Math.PI * 2;
+    let rVar = radius * (0.75 + Math.random() * 0.5);
+    offsets.push({ x: Math.cos(angle) * rVar, y: Math.sin(angle) * rVar });
+  }
+  return offsets;
+}
+
+function updateStatsUI() {
+  let statsEl = document.getElementById('statsList');
+  statsEl.innerHTML = `
+    <div>🎮 Games Grinded: <b>${totalGamesPlayed}</b></div>
+    <div>💥 Asteroids Destroyed: <b>${totalAsteroidsDestroyed}</b></div>
+    <div>🪙 Coins Flexed: <b>${totalCoinsCollected}</b></div>
+  `;
+}
+
+function updateMissionUI() {
+  let textEl = document.getElementById('missionText');
+  let btnEl = document.getElementById('claimMissionBtn');
+  if(missionClaimed) {
+    textEl.innerText = `Mission Completed! No Cap 👑`;
+    btnEl.style.display = 'none';
+  } else if(missionProgress >= MISSION_TARGET) {
+    textEl.innerText = `Ready to Claim! (${missionProgress}/${MISSION_TARGET})`;
+    btnEl.style.display = 'block';
+  } else {
+    textEl.innerText = `Destroy 15 Asteroids: ${missionProgress}/${MISSION_TARGET}`;
+    btnEl.style.display = 'none';
+  }
+}
+
+function claimMission() {
+  if(missionClaimed || missionProgress < MISSION_TARGET) return;
+  totalCoins += 200;
+  totalCoinsCollected += 200;
+  localStorage.setItem('STAT_COINS', totalCoinsCollected);
+  missionClaimed = true;
+  localStorage.setItem('TOTAL_COINS', totalCoins);
+  localStorage.setItem('MISSION_CLAIMED', '1');
+  populateMenu();
+  alert('✨ Sheesh! Claimed 200 Bonus Coins!');
+}
+
+function updateGlobalLeaderboardUI() {
+  let listEl = document.getElementById('globalScoresList');
+  listEl.innerHTML = '';
+  globalScores.sort((a, b) => b.score - a.score);
+  globalScores.slice(0, 5).forEach((item, idx) => {
+    listEl.innerHTML += `<div style="display:flex; justify-content:space-between;"><span>#${idx + 1} ${item.name}</span> <b>${item.score}</b></div>`;
+  });
+}
+
+function populateMenu(){
+  const mapChoice = document.getElementById('mapChoice');
+  mapChoice.innerHTML = '';
+  maps.forEach(m => { if(m.owned || m.price === 0) mapChoice.innerHTML += `<option value="${m.id}">${m.name}</option>`; });
+
+  const rocketChoice = document.getElementById('rocketChoice');
+  rocketChoice.innerHTML = '';
+  rockets.forEach(r => { if(r.owned) rocketChoice.innerHTML += `<option value="${r.type}">${r.name} (${r.multiplier}x)</option>`; });
+
+  const storeItems = document.getElementById('storeItems');
+  storeItems.innerHTML = `
+    <div class="item"><span>❤️ Extra Life (Max 5) [${maxLives}/5]</span><button onclick="buyUpgrade('lives', 1000)">🪙 1000</button></div>
+    <div class="item"><span>🛡️ Power Duration +5s</span><button onclick="buyUpgrade('shield', 1000)">🪙 1000</button></div>
+  `;
+  maps.forEach(m => {
+    if(!m.owned && m.price > 0) storeItems.innerHTML += `<div class="item"><span>🗺️ ${m.name}</span><button onclick="buyMap('${m.id}',${m.price})">🪙 ${m.price}</button></div>`;
+  });
+  rockets.forEach(r => {
+    if(!r.owned) storeItems.innerHTML += `<div class="item"><span>🚀 ${r.name}</span><button onclick="buyRocket('${r.type}',${r.price})">🪙 ${r.price}</button></div>`;
+  });
+  
+  document.getElementById('menuCoins').innerText = totalCoins;
+  document.getElementById('coins').innerText = totalCoins;
+  updateGlobalLeaderboardUI();
+  updateMissionUI();
+  updateStatsUI();
+}
+populateMenu();
+
+function buyUpgrade(type, price) {
+  if(totalCoins < price) return alert('Bro is broke! Not enough coins 💀');
+  if(type === 'lives') {
+    if(maxLives >= 5) return alert('❤️ Max 5 lives already reached!');
+    maxLives++;
+    localStorage.setItem('UP_LIVES', maxLives);
+    alert('❤️ W Upgrades! Max lives: ' + maxLives);
+  }
+  if(type === 'shield') {
+    shieldBonusTime += 5000;
+    localStorage.setItem('UP_SHIELD', shieldBonusTime);
+    alert('🛡️ Power duration boosted!');
+  }
+  totalCoins -= price;
+  localStorage.setItem('TOTAL_COINS', totalCoins);
+  populateMenu();
+}
+
+function buyRocket(type, price){
+  if(totalCoins < price) return alert('Bro is broke! Not enough coins 💀');
+  totalCoins -= price;
+  rockets.find(x => x.type === type).owned = true;
+  localStorage.setItem('TOTAL_COINS', totalCoins);
+  localStorage.setItem('OWN_' + type, '1');
+  populateMenu(); alert('🔥 Skin Unlocked! W Flex!');
+}
+
+function buyMap(id, price){
+  if(totalCoins < price) return alert('Bro is broke! Not enough coins 💀');
+  totalCoins -= price;
+  maps.find(x => x.id === id).owned = true;
+  localStorage.setItem('TOTAL_COINS', totalCoins);
+  localStorage.setItem('MAP_' + id, '1');
+  populateMenu(); alert('🗺️ Map Unlocked!');
+}
+
+function redeemCode(){
+  let code = document.getElementById('codeInput').value.trim().toUpperCase();
+  if(code === 'TAGDA2026' && !localStorage.getItem('USED_TAGDA')){
+    totalCoins += 500;
+    totalCoinsCollected += 500;
+    localStorage.setItem('STAT_COINS', totalCoinsCollected);
+    localStorage.setItem('TOTAL_COINS', totalCoins);
+    localStorage.setItem('USED_TAGDA', '1');
+    populateMenu(); alert('🔥 W Code! +500 Coins Added!');
+    document.getElementById('codeInput').value = '';
+  } else { alert('Invalid or already used code L 💀'); }
+}
+
+let selectedRocket = 'rocket1', selectedMap = 'space';
+let px = W/2, py = 450, targetPx = W/2, moveDir = 0;
+let asteroids = [], coinsArr = [], powerUps = [], lasers = [], bossLasers = [], particles = [], floatingTexts = [];
+let score = 0, play = false, lives = 1, ultraCharge = 0, ultraActive = false, ultraTimer = 0;
+let spawnRate = 0.02, enemySpeed = 3, scoreSpeed = 1, coinRate = 0.015;
+let shieldActive = false, magnetActive = false;
+let shieldExpires = 0, magnetExpires = 0;
+let lastFireTime = 0, lastPowerSpawnScore = 0, screenShake = 0;
+let boss = null, lastScoreSubmitted = 0;
+let hazardType = null, hazardTimer = 0;
+let coinRainActive = false, coinRainTimer = 0;
+let lastCoinMilestone = 0;
+
+let stars3D = [];
+for(let i=0; i<40; i++) {
+  stars3D.push({ x: (Math.random() - 0.5) * W * 2, y: (Math.random() - 0.5) * H * 2, z: Math.random() * W });
+}
+
+const leftBtn = document.getElementById('leftBtn'), rightBtn = document.getElementById('rightBtn');
+const fireBtn = document.getElementById('fireBtn'), ultraBtn = document.getElementById('ultraBtn');
+
+[leftBtn, rightBtn].forEach((btn, i) => {
+  let dir = i === 0 ? -1 : 1;
+  btn.onmousedown = () => moveDir = dir;
+  btn.onmouseup = () => moveDir = 0;
+  btn.ontouchstart = (e) => { e.preventDefault(); moveDir = dir; };
+  btn.ontouchend = () => moveDir = 0;
+});
+
+fireBtn.onclick = () => {
+  if(!play || ultraActive) return;
+  let now = Date.now();
+  let rObj = rockets.find(r => r.type === selectedRocket) || rockets[0];
+  if(now - lastFireTime < rObj.fireRate) return;
+  lastFireTime = now;
+  if(selectedRocket === 'rocket3' || selectedRocket === 'rocket4') {
+    lasers.push({x: px - 8, y: py - 10, color: rObj.laserColor});
+    lasers.push({x: px + 8, y: py - 10, color: rObj.laserColor});
+  } else {
+    lasers.push({x: px, y: py - 10, color: rObj.laserColor});
+  }
+  playSound('laser');
+};
+
+ultraBtn.onclick = () => {
+  if(!play || ultraCharge < 100) return;
+  ultraCharge = 0;
+  ultraActive = true;
+  ultraTimer = Date.now() + 4000;
+  playSound('ultra');
+  screenShake = 18;
+  ultraBtn.disabled = true;
+  ultraBtn.innerText = '✨ GOD MODE ACTIVE';
+};
+
+canvas.ontouchmove = (e) => {
+  let t = e.touches[0];
+  let rect = canvas.getBoundingClientRect();
+  targetPx = Math.max(25, Math.min(W - 25, (t.clientX - rect.left) * (W / rect.width)));
+};
+
+function setDiff(l){
+  initAudio();
+  totalGamesPlayed++;
+  localStorage.setItem('STAT_GAMES', totalGamesPlayed);
+
+  if(l===1){ spawnRate=.02; enemySpeed=3; scoreSpeed=1; coinRate=.015; }
+  else if(l===2){ spawnRate=.035; enemySpeed=4.5; scoreSpeed=.9; coinRate=.022; }
+  else if(l===3){ spawnRate=.05; enemySpeed=6; scoreSpeed=.7; coinRate=.03; }
+  else if(l===4){ spawnRate=.1; enemySpeed=8.5; scoreSpeed=.5; coinRate=.045; }
+
+  selectedMap = document.getElementById('mapChoice').value;
+  selectedRocket = document.getElementById('rocketChoice').value;
+
+  document.getElementById('menu').style.display = 'none';
+  canvas.style.display = 'block';
+  document.getElementById('ctrl').style.display = 'flex';
+  document.getElementById('gameOver').style.display = 'none';
+
+  asteroids = []; coinsArr = []; powerUps = []; lasers = []; bossLasers = []; particles = []; floatingTexts = [];
+  score = 0; px = W/2; targetPx = W/2; moveDir = 0; play = true; lives = Math.min(5, maxLives); boss = null;
+  ultraCharge = 0; ultraActive = false; hazardType = null; hazardTimer = 0;
+  shieldActive = magnetActive = false; coinRainActive = false; coinRainTimer = 0; lastCoinMilestone = 0;
+  startCoins = totalCoins;
+}
+
+function handleGameOver() {
+  play = false;
+  lastScoreSubmitted = Math.floor(score);
+  document.getElementById('gameOver').style.display = 'flex';
+  document.getElementById('goScore').innerText = 'Score: ' + lastScoreSubmitted;
+  document.getElementById('goCoins').innerText = 'Coins Earned: +' + Math.max(0, totalCoins - startCoins);
+  document.getElementById('ctrl').style.display = 'none';
+}
+
+function submitGlobalScore() {
+  let nameInput = document.getElementById('playerName').value.trim() || 'Anonymous Chad';
+  globalScores.push({ name: nameInput, score: lastScoreSubmitted });
+  globalScores.sort((a, b) => b.score - a.score);
+  globalScores = globalScores.slice(0, 10);
+  localStorage.setItem('GLOBAL_SCORES', JSON.stringify(globalScores));
+  updateGlobalLeaderboardUI();
+  alert('🔥 Sheesh! Score flexed successfully on World Rank!');
+  document.getElementById('playerName').value = '';
+}
+
+function loop(){
+  ctx.save();
+  if(screenShake > 0) {
+    ctx.translate((Math.random() - 0.5) * screenShake, (Math.random() - 0.5) * screenShake);
+    screenShake *= 0.9;
+  }
+
+  let now = Date.now();
+  if(shieldActive && shieldExpires <= now) shieldActive = false;
+  if(magnetActive && magnetExpires <= now) magnetActive = false;
+  if(coinRainActive && now > coinRainTimer) coinRainActive = false;
+  if(ultraActive && now > ultraTimer) {
+    ultraActive = false;
+    ultraBtn.innerText = '🌟 ULTRA';
+  }
+
+  let activeText = [];
+  if(shieldActive) activeText.push(`Shield (${Math.ceil((shieldExpires - now)/1000)}s)`);
+  if(magnetActive) activeText.push(`Magnet (${Math.ceil((magnetExpires - now)/1000)}s)`);
+  if(coinRainActive) activeText.push('🪙 COIN RAIN EVENT!');
+  if(ultraActive) activeText.push('GOD MODE 🔥');
+  if(hazardType) activeText.push(`⚠️ ${hazardType.toUpperCase()}`);
+  document.getElementById('activePowers').innerText = activeText.length ? activeText.join(' • ') : 'None';
+
+  let bgColors = {space:'#030712', nebula:'#1e1b4b', mars:'#450a0a', galaxy:'#020617'};
+  ctx.fillStyle = bgColors[selectedMap] || '#030712';
+  ctx.fillRect(0, 0, W, H);
+
+  for(let s of stars3D) {
+    s.z -= play ? (enemySpeed * 0.4) : 1;
+    if(s.z <= 0) s.z = W;
+    let k = 200 / s.z;
+    let px3d = s.x * k + W / 2;
+    let py3d = s.y * k + H / 2;
+    if(px3d >= 0 && px3d <= W && py3d >= 0 && py3d <= H) {
+      ctx.fillStyle = `rgba(255, 255, 255, ${1 - s.z / W})`;
+      ctx.fillRect(px3d, py3d, 2, 2);
+    }
+  }
+
+  if(play){
+    if(moveDir !== 0) {
+      targetPx = Math.max(25, Math.min(W - 25, px + moveDir * 7));
+    }
+    px += (targetPx - px) * 0.25;
+
+    let currentScore = Math.floor(score);
+
+    if(currentScore > 0 && currentScore % 2000 === 0 && currentScore !== lastCoinMilestone && !coinRainActive) {
+      coinRainActive = true;
+      coinRainTimer = now + 5000;
+      lastCoinMilestone = currentScore;
+      floatingTexts.push({x: W/2, y: 120, text: `🪙 ${currentScore} SCORE! COIN RAIN! 🪙`, alpha: 1});
+    }
+
+    if(currentScore > 0 && currentScore % 800 === 0 && !hazardType && Math.random() < 0.5) {
+      hazardType = 'Black Hole';
+      hazardTimer = now + 6000;
+      let memeSlangs = ['BRO IS COOKING 💀', 'SHEESH VIBES 🥶', 'AURA -999 ⚠️', 'GRINDSET 🗿'];
+      floatingTexts.push({x: W/2, y: 120, text: memeSlangs[Math.floor(Math.random()*memeSlangs.length)], alpha: 1});
+    }
+
+    if(hazardType && now > hazardTimer) hazardType = null;
+
+    if(hazardType === 'Black Hole') {
+      let bhX = W / 2, bhY = H / 3;
+      ctx.fillStyle = '#a855f7';
+      ctx.beginPath(); ctx.arc(bhX, bhY, 20 + Math.sin(now/100)*4, 0, Math.PI*2); ctx.fill();
+      targetPx += (bhX - targetPx) * 0.02;
+    }
+
+    if(currentScore > 0 && currentScore % 50000 === 0 && !boss) {
+      boss = { x: W/2, y: -60, targetY: 70, hp: 100, maxHp: 100, dir: 1, lastShoot: 0 };
+      floatingTexts.push({x: W/2, y: 100, text: `👑 FINAL BOSS AURA CHECK!`, alpha: 1});
+    }
+
+    if(!boss && Math.random() < spawnRate) {
+      let isBig = Math.random() < 0.35;
+      let r = isBig ? 26 : 16;
+      let hp = isBig ? 5 : 1;
+      let vCount = 7 + Math.floor(Math.random() * 4);
+      let offsets = generateAsteroidOffsets(vCount, r);
+      asteroids.push({
+        x: Math.random()*(W-40)+20, y: -40,
+        r, hp, maxHp: hp, scale: 0.3,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.04,
+        offsets,
+        vy: enemySpeed
+      });
+    }
+
+    let effectiveCoinRate = coinRainActive ? 0.35 : coinRate;
+    if(Math.random() < effectiveCoinRate) {
+      coinsArr.push({
+        x: Math.random()*(W-20)+10,
+        y: -20,
+        vy: coinRainActive ? (enemySpeed + 2.5) : (enemySpeed + 0.5),
+        scale: 0.5
+      });
+    }
+
+    if(currentScore - lastPowerSpawnScore >= 10000){
+      let pTypes = ['shield','magnet','slow'];
+      powerUps.push({type: pTypes[Math.floor(Math.random()*pTypes.length)], x: Math.random()*(W-40)+20, y: -20});
+      lastPowerSpawnScore = currentScore;
+    }
+  }
+
+  for(let i = particles.length - 1; i >= 0; i--){
+    let pt = particles[i];
+    pt.x += pt.vx; pt.y += pt.vy; pt.alpha -= 0.035;
+    ctx.fillStyle = pt.color;
+    ctx.globalAlpha = Math.max(0, pt.alpha);
+    ctx.fillRect(pt.x, pt.y, 3, 3);
+    ctx.globalAlpha = 1.0;
+    if(pt.alpha <= 0) particles.splice(i, 1);
+  }
+
+  if(ultraActive) {
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.7)';
+    ctx.fillRect(px - 18, 0, 36, py);
+    if(boss && Math.abs(boss.x - px) < 55) boss.hp -= 2;
+    for(let j = asteroids.length - 1; j >= 0; j--) {
+      if(Math.abs(asteroids[j].x - px) < 35) {
+        score += 50;
+        spawnParticles(asteroids[j].x, asteroids[j].y, '#f59e0b');
+        asteroids.splice(j, 1);
+      }
+    }
+  }
+
+  if(boss) {
+    if(boss.y < boss.targetY) boss.y += 1.5;
+    boss.x += boss.dir * 2.5;
+    if(boss.x < 40 || boss.x > W - 40) boss.dir *= -1;
+
+    if(now - boss.lastShoot > 1200) {
+      boss.lastShoot = now;
+      bossLasers.push({x: boss.x, y: boss.y + 20});
+      playSound('laser');
+    }
+
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath(); ctx.arc(boss.x, boss.y, 35, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#f87171'; ctx.lineWidth = 4; ctx.stroke();
+
+    ctx.fillStyle = '#334155'; ctx.fillRect(boss.x - 35, boss.y - 50, 70, 7);
+    ctx.fillStyle = '#22c55e'; ctx.fillRect(boss.x - 35, boss.y - 50, (boss.hp / boss.maxHp) * 70, 7);
+    if(boss.hp <= 0) {
+      playSound('explosion');
+      spawnParticles(boss.x, boss.y, '#ef4444');
+      score += 5000; totalCoins += 500;
+      totalCoinsCollected += 500;
+      localStorage.setItem('STAT_COINS', totalCoinsCollected);
+      boss = null; screenShake = 18;
+      floatingTexts.push({x: W/2, y: 150, text: `W BOSS SLAYED 👑`, alpha: 1});
+    }
+  }
+
+  for(let i = bossLasers.length - 1; i >= 0; i--){
+    let bl = bossLasers[i];
+    bl.y += 6;
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(bl.x - 3, bl.y, 6, 16);
+
+    if(Math.hypot(bl.x - px, bl.y - (py+20)) < 18 && play) {
+      bossLasers.splice(i, 1);
+      if(shieldActive) { shieldActive = false; playSound('explosion'); }
+      else { lives--; screenShake = 14; playSound('explosion'); if(lives <= 0) handleGameOver(); }
+      continue;
+    }
+    if(bl.y > H + 20) bossLasers.splice(i, 1);
+  }
+
+  for(let i = lasers.length - 1; i >= 0; i--){
+    let l = lasers[i];
+    l.y -= 12;
+    ctx.fillStyle = l.color || '#38bdf8';
+    ctx.fillRect(l.x - 2, l.y, 4, 16);
+
+    if(boss && Math.hypot(l.x - boss.x, l.y - boss.y) < 35) {
+      boss.hp--; lasers.splice(i, 1); continue;
+    }
+
+    for(let j = asteroids.length - 1; j >= 0; j--){
+      let a = asteroids[j];
+      if(Math.hypot(l.x - a.x, l.y - a.y) < (a.r * a.scale) + 5){
+        a.hp--; lasers.splice(i, 1);
+        if(a.hp <= 0){
+          score += a.maxHp === 5 ? 200 : 50;
+          totalAsteroidsDestroyed++;
+          localStorage.setItem('STAT_ASTEROIDS', totalAsteroidsDestroyed);
+          screenShake = 10; playSound('explosion');
+          spawnParticles(a.x, a.y, '#64748b');
+          asteroids.splice(j, 1);
+          if(!missionClaimed && missionProgress < MISSION_TARGET) {
+            missionProgress++;
+            localStorage.setItem('MISSION_PROG', missionProgress);
+          }
+          if(!ultraActive && ultraCharge < 100) ultraCharge = Math.min(100, ultraCharge + 4);
+        }
+        break;
+      }
+    }
+    if(l.y < 0) lasers.splice(i, 1);
+  }
+
+  for(let i = asteroids.length - 1; i >= 0; i--){
+    let a = asteroids[i];
+    a.y += a.vy;
+    a.rotation += a.rotSpeed;
+    if(a.scale < 1) a.scale += 0.05;
+
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(a.rotation);
+    ctx.scale(a.scale, a.scale);
+
+    ctx.fillStyle = a.maxHp > 1 ? '#7f1d1d' : '#475569';
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let j = 0; j < a.offsets.length; j++) {
+      let pt = a.offsets[j];
+      if (j === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = a.maxHp > 1 ? '#450a0a' : '#1e293b';
+    ctx.beginPath();
+    ctx.arc(-a.r * 0.3, -a.r * 0.2, a.r * 0.25, 0, Math.PI * 2);
+    ctx.arc(a.r * 0.25, a.r * 0.3, a.r * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, a.r * 0.6, Math.PI, Math.PI * 1.5);
+    ctx.stroke();
+
+    ctx.restore();
+
+    if(Math.hypot(a.x - px, a.y - (py+20)) < (a.r * a.scale) + 10 && play){
+      if(shieldActive){ shieldActive = false; playSound('explosion'); spawnParticles(a.x, a.y, '#38bdf8'); asteroids.splice(i,1); }
+      else {
+        lives--; playSound('explosion'); spawnParticles(px, py, '#ef4444'); asteroids.splice(i, 1); screenShake = 12;
+        if(lives <= 0) handleGameOver();
+      }
+    }
+    if(a.y > H + 40) asteroids.splice(i,1);
+  }
+
+  for(let i = coinsArr.length - 1; i >= 0; i--){
+    let c = coinsArr[i];
+    if(magnetActive){ c.x += (px - c.x) * 0.12; c.y += ((py+20) - c.y) * 0.12; }
+    else { c.y += c.vy; }
+    if(c.scale < 1) c.scale += 0.05;
+
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath(); ctx.arc(c.x, c.y, 9, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#ca8a04'; ctx.lineWidth = 2; ctx.stroke();
+
+    if(Math.abs(c.x - px) < 22 && Math.abs(c.y - (py+20)) < 22 && play){
+      let mult = (rockets.find(r=>r.type===selectedRocket) || rockets[0]).multiplier;
+      totalCoins += mult; totalCoinsCollected += mult;
+      localStorage.setItem('STAT_COINS', totalCoinsCollected);
+      playSound('coin');
+      if(!ultraActive && ultraCharge < 100) ultraCharge = Math.min(100, ultraCharge + 6);
+      document.getElementById('menuCoins').innerText = document.getElementById('coins').innerText = totalCoins;
+      localStorage.setItem('TOTAL_COINS', totalCoins);
+      coinsArr.splice(i, 1); continue;
+    }
+    if(c.y > H + 20) coinsArr.splice(i, 1);
+  }
+
+  for(let i = powerUps.length - 1; i >= 0; i--){
+    let p = powerUps[i];
+    p.y += 2.2;
+    ctx.fillStyle = p.type === 'shield' ? '#38bdf8' : (p.type === 'magnet' ? '#f59e0b' : '#ef4444');
+    ctx.beginPath(); ctx.arc(p.x, p.y, 13, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(p.type[0].toUpperCase(), p.x - 3, p.y + 4);
+
+    if(Math.abs(p.x - px) < 22 && Math.abs(p.y - (py+20)) < 22 && play){
+      playSound('powerup');
+      let bonusDuration = (p.type === 'shield' || p.type === 'magnet') ? shieldBonusTime : 0;
+      if(p.type === 'shield') { shieldActive = true; shieldExpires = Date.now() + 10000 + bonusDuration; }
+      if(p.type === 'magnet') { magnetActive = true; magnetExpires = Date.now() + 20000 + bonusDuration; }
+      if(p.type === 'slow') { enemySpeed *= 0.5; setTimeout(()=> enemySpeed*=2, 5000); }
+      powerUps.splice(i, 1);
+    }
+    if(p.y > H + 20) powerUps.splice(i, 1);
+  }
+
+  for(let i = floatingTexts.length - 1; i >= 0; i--){
+    let ft = floatingTexts[i];
+    ft.y -= 1.5; ft.alpha -= 0.03;
+    ctx.fillStyle = `rgba(250, 204, 21, ${Math.max(0, ft.alpha)})`;
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(ft.text, ft.x, ft.y);
+    if(ft.alpha <= 0) floatingTexts.splice(i, 1);
+  }
+
+  let rObj = rockets.find(r => r.type === selectedRocket) || rockets[0];
+  let tiltAngle = (targetPx - px) * 0.03;
+
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.rotate(tiltAngle);
+
+  let bodyColor = rObj.color;
+  if(bodyColor === 'rgb') {
+    let hue = (Date.now() / 5) % 360;
+    bodyColor = `hsl(${hue}, 100%, 50%)`;
+  }
+
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.moveTo(0, -22);
+  ctx.lineTo(-12, 12);
+  ctx.lineTo(-6, 18);
+  ctx.lineTo(6, 18);
+  ctx.lineTo(12, 12);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath();
+  ctx.arc(0, -5, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#1e293b';
+  ctx.beginPath();
+  ctx.moveTo(-12, 8); ctx.lineTo(-18, 16); ctx.lineTo(-10, 16); ctx.closePath(); ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(12, 8); ctx.lineTo(18, 16); ctx.lineTo(10, 16); ctx.closePath(); ctx.fill();
+
+  let flameSize = 12 + Math.sin(Date.now() / 40) * 4;
+  ctx.fillStyle = bodyColor === 'rgb' ? '#ec4899' : '#f97316';
+  ctx.beginPath();
+  ctx.moveTo(-5, 18); ctx.lineTo(5, 18); ctx.lineTo(0, 18 + flameSize);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+
+  if(shieldActive){
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px, py+2, 28, 0, Math.PI*2); ctx.stroke();
+  }
+
+  if(play) score += scoreSpeed;
+  
+  if(ultraCharge >= 100 && !ultraActive) {
+    ultraBtn.disabled = false;
+    ultraBtn.innerText = '✨ GOD MODE!';
+  } else if(!ultraActive) {
+    ultraBtn.disabled = true;
+    ultraBtn.innerText = `🌟 ${ultraCharge}%`;
+  }
+
+  document.getElementById('score').innerText = 'Score: ' + Math.floor(score);
+  document.getElementById('livesDisplay').innerText = '❤️'.repeat(Math.max(0, lives));
+  document.getElementById('ultraMeter').innerText = `Ultra: ${ultraCharge}%`;
+  document.getElementById('coins').innerText = totalCoins;
+
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+loop();
+
+document.getElementById('playAgain').onclick = () => setDiff(1);
+document.getElementById('backMenu').onclick = () => {
+  document.getElementById('gameOver').style.display = 'none';
+  canvas.style.display = 'none';
+  document.getElementById('ctrl').style.display = 'none';
+  document.getElementById('menu').style.display = 'block';
+  populateMenu();
+};
+</script>
+</body>
+</html>
